@@ -1,4 +1,5 @@
-﻿@model ErrorViewModel
+﻿<h1>Some thing is wrong!</h1>
+@*@model ErrorViewModel
 @{
     ViewData["Title"] = "Error";
 }
@@ -23,3 +24,24 @@
     For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
     and restarting the app.
 </p>
+<hr />*@
+    @*<div>
+        <h1>My custome Code</h1>
+    </div>
+<h4>Exception Details: </h4>
+
+<div class="alert alert-danger">
+    <h5>Exception Path</h5>
+    <hr />
+    <p>@ViewBag.ExceptionPath</p>
+</div>
+<div class="alert alert-danger">
+    <h5>Exception Message</h5>
+    <hr />
+    <p>@ViewBag.ExceptionMessage</p>
+</div>
+<div class="alert alert-danger">
+    <h5>Exception Stack Trace</h5>
+    <hr />
+    <p>@ViewBag.ExceptionStackTrace</p>
+</div>*@
