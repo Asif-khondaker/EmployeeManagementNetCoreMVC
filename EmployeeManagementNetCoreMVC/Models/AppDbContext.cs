@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace EmployeeManagementNetCoreMVC.Models
 {
-    public class AppDbContext : IdentityDbContext
+    public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -18,6 +18,10 @@ namespace EmployeeManagementNetCoreMVC.Models
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.Seed();
+            foreach(var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+            {
+                foreignKey.DeleteBehavior = DeleteBehavior.Restrict;
+            }
         }
     }
 }

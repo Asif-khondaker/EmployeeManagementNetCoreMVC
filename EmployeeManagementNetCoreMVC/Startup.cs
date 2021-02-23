@@ -29,7 +29,7 @@ namespace EmployeeManagementNetCoreMVC
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("EmployeeDBConnection")));
-            services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequiredLength = 10;
                 options.Password.RequiredUniqueChars = 3;
@@ -39,6 +39,7 @@ namespace EmployeeManagementNetCoreMVC
                 options.Filters.Add(new AuthorizeFilter(policy));
             }).AddXmlSerializerFormatters();
             //services.AddControllersWithViews().AddXmlSerializerFormatters();
+            services.AddControllersWithViews().AddRazorRuntimeCompilation();
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
         }
 
