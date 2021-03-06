@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EmployeeManagementNetCoreMVC.Models;
+using EmployeeManagementNetCoreMVC.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -34,14 +36,55 @@ namespace EmployeeManagementNetCoreMVC
                 options.Password.RequiredLength = 10;
                 options.Password.RequiredUniqueChars = 3;
             }).AddEntityFrameworkStores<AppDbContext>();
-            services.AddMvc(options => {
+            services.AddMvc(options =>
+            {
                 var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
                 options.Filters.Add(new AuthorizeFilter(policy));
             }).AddXmlSerializerFormatters();
+
+            services.ConfigureApplicationCookie(option =>
+           {
+               option.AccessDeniedPath = new PathString("/Administration/AccessDenied");
+           });
+
+            //Claims Policy
+            services.AddAuthorization(option =>
+           {
+               option.AddPolicy("DeleteRolePolicy",
+                   policy => policy.RequireClaim("Delete Role")
+                   );
+
+               //option.AddPolicy("EditRolePolicy",
+               //    policy => policy.RequireAssertion(context => GetAthorizeAccess(context))
+               //    );
+
+               option.AddPolicy("EditRolePolicy",
+                   policy => policy.AddRequirements(new ManageAdminRolesAndClaimsRequirment()));
+
+               option.AddPolicy("AdminRolePolicy",
+                    policy => policy.RequireRole("Admin")
+                    );
+           });
+
+            //Claims Policy
+            services.AddAuthorization(option =>
+            {
+
+            });
             //services.AddControllersWithViews().AddXmlSerializerFormatters();
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
+            services.AddSingleton<IAuthorizationHandler, CanEditOnlyOtherAdminRolesAndClaimsHandler>();
         }
+
+        //Acess Method by Assertion
+        private bool GetAthorizeAccess(AuthorizationHandlerContext context)
+        {
+            return context.User.IsInRole("Admin") &&
+                context.User.HasClaim(claim => claim.Type == "Edit Role" && claim.Value == "true") ||
+                context.User.IsInRole("Super Admin");
+        }
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -54,7 +97,7 @@ namespace EmployeeManagementNetCoreMVC
             {
                 app.UseExceptionHandler("/Error");
                 app.UseStatusCodePagesWithReExecute("/Error/{0}");
-                
+
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
@@ -63,7 +106,7 @@ namespace EmployeeManagementNetCoreMVC
 
             app.UseRouting();
 
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

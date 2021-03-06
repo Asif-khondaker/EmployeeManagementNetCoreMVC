@@ -8,11 +8,12 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace EmployeeManagementNetCoreMVC.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Policy = "AdminRolePolicy")]
     public class AdministrationController : Controller
     {
         private readonly RoleManager<IdentityRole> roleManager;
@@ -26,6 +27,61 @@ namespace EmployeeManagementNetCoreMVC.Controllers
             this.roleManager = roleManager;
             this.userManager = userManager;
             this.logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ManageUserClaims(string userId)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with id = {userId} not found";
+                return View("NotFound");
+            }
+            var existingUserClaims = await userManager.GetClaimsAsync(user);
+            var model = new UserClaimsViewModel
+            {
+                UserId = userId
+            };
+            foreach (Claim claims in ClaimsStore.AllClaims)
+            {
+                UserClaim userClaim = new UserClaim
+                {
+                    ClaimType = claims.Type
+                };
+                if (existingUserClaims.Any(c => c.Type == claims.Type && c.Value == "true"))
+                {
+                    userClaim.IsSelected = true;
+                }
+                model.Claims.Add(userClaim);
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ManageUserClaims(UserClaimsViewModel model)
+        {
+            var user = await userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"User with id = {model.UserId} not found";
+                return View("NotFound");
+            }
+            var claims = await userManager.GetClaimsAsync(user);
+            var result = await userManager.RemoveClaimsAsync(user, claims);
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "Can't remove user existing claims");
+                return View(model);
+            }
+            result = await userManager.AddClaimsAsync(user,
+                model.Claims.Select(c => new Claim(c.ClaimType, c.IsSelected ? "true" : "false")));
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "Can't remove user existing claims");
+                return View(model);
+            }
+            return RedirectToAction("EditUser", new { Id = model.UserId });
         }
 
         [HttpGet]
@@ -52,7 +108,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
                 UserName = user.UserName,
                 Email = user.Email,
                 City = user.City,
-                Claims = userClaims.Select(c => c.Value).ToList(),
+                Claims = userClaims.Select(c => c.Type +" : "+ c.Value).ToList(),
                 Roles = (List<string>)userRoles
             };
             return View(model);
@@ -110,6 +166,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserRoles(string userId)
         {
             ViewBag.userId = userId;
@@ -141,6 +198,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserRoles(List<UserRolesViewModel> model, string userId)
         {
             var user = await userManager.FindByIdAsync(userId);
@@ -168,41 +226,11 @@ namespace EmployeeManagementNetCoreMVC.Controllers
             return RedirectToAction("EditUser", new { id = userId });
         }
 
-    //    [HttpPost]
-    //    public async Task<IActionResult>
-    //ManageUserRoles(List<UserRolesViewModel> model, string userId)
-    //    {
-    //        var user = await userManager.FindByIdAsync(userId);
 
-    //        if (user == null)
-    //        {
-    //            ViewBag.ErrorMessage = $"User with Id = {userId} cannot be found";
-    //            return View("NotFound");
-    //        }
-
-    //        var roles = await userManager.GetRolesAsync(user);
-    //        var result = await userManager.RemoveFromRolesAsync(user, roles);
-
-    //        if (!result.Succeeded)
-    //        {
-    //            ModelState.AddModelError("", "Cannot remove user existing roles");
-    //            return View(model);
-    //        }
-
-    //        result = await userManager.AddToRolesAsync(user,
-    //            model.Where(x => x.IsSelected).Select(y => y.RoleName));
-
-    //        if (!result.Succeeded)
-    //        {
-    //            ModelState.AddModelError("", "Cannot add selected roles to user");
-    //            return View(model);
-    //        }
-
-    //        return RedirectToAction("EditUser", new { Id = userId });
-    //    }
 
 
         [HttpPost]
+        [Authorize(Policy = "DeleteRolePolicy")]
         public async Task<IActionResult> DeleteRole(string id)
         {
 
@@ -278,6 +306,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpGet]
+        
         public async Task<IActionResult> EditRole(string id)
         {
             var role = await roleManager.FindByIdAsync(id);
@@ -303,6 +332,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpPost]
+        
         public async Task<IActionResult> EditRole(EditRoleViewModel model)
         {
             var role = await roleManager.FindByIdAsync(model.Id);
@@ -393,6 +423,13 @@ namespace EmployeeManagementNetCoreMVC.Controllers
                 }
             }
             return RedirectToAction("EditRole", new { Id = role.Id });
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
     }
 }
