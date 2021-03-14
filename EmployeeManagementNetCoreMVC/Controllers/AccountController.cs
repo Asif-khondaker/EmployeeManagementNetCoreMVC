@@ -29,7 +29,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         public async Task<IActionResult> IsEmailInUse(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
-            if(user == null)
+            if (user == null)
             {
                 return Json(true);
             }
@@ -61,11 +61,11 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser 
-                { 
-                    UserName = model.Email, 
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
                     Email = model.Email,
-                    City =model.City
+                    City = model.City
                 };
                 var result = await userManager.CreateAsync(user, model.Password);
 
@@ -88,8 +88,14 @@ namespace EmployeeManagementNetCoreMVC.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login()
+        public async Task<IActionResult> Login(string returnUrl)
         {
+            LoginViewModel model = new LoginViewModel();
+
+            model.ReturnUrl = returnUrl;
+            //ExternalLogins = (await signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
+            model.ExternalLogins = (await signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        
             return View();
         }
 
@@ -105,7 +111,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
 
                 if (result.Succeeded)
                 {
-                    if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl)) 
+                    if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
                     {
                         return Redirect(ReturnUrl);
                     }
@@ -113,16 +119,16 @@ namespace EmployeeManagementNetCoreMVC.Controllers
                     {
                         return RedirectToAction("Index", "Home");
                     }
-                    
-                    
+
+
                 }
-                
-                    ModelState.AddModelError(string.Empty, "Invalid loging attempted");
-                
+
+                ModelState.AddModelError(string.Empty, "Invalid loging attempted");
+
             }
             return View(model);
         }
 
-        
+
     }
 }

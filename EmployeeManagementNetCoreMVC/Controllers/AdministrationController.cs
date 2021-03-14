@@ -30,6 +30,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserClaims(string userId)
         {
             var user = await userManager.FindByIdAsync(userId);
@@ -59,6 +60,7 @@ namespace EmployeeManagementNetCoreMVC.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserClaims(UserClaimsViewModel model)
         {
             var user = await userManager.FindByIdAsync(model.UserId);

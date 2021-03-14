@@ -47,6 +47,14 @@ namespace EmployeeManagementNetCoreMVC
                option.AccessDeniedPath = new PathString("/Administration/AccessDenied");
            });
 
+            //Google Auth
+            services.AddAuthentication()
+                .AddGoogle(option =>
+                {
+                    option.ClientId = "895936145722-mtsd52afd0sggqvpu2btlv0hnf9bh0sn.apps.googleusercontent.com";
+                    option.ClientSecret = "_72acRvRMQFmVZt1Hf53cHZN";
+                });
+
             //Claims Policy
             services.AddAuthorization(option =>
            {
@@ -64,6 +72,7 @@ namespace EmployeeManagementNetCoreMVC
                option.AddPolicy("AdminRolePolicy",
                     policy => policy.RequireRole("Admin")
                     );
+               
            });
 
             //Claims Policy
@@ -75,6 +84,7 @@ namespace EmployeeManagementNetCoreMVC
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
             services.AddSingleton<IAuthorizationHandler, CanEditOnlyOtherAdminRolesAndClaimsHandler>();
+            services.AddSingleton<IAuthorizationHandler, SuperAdminHandler>();
         }
 
         //Acess Method by Assertion
